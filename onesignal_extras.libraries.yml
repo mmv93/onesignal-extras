@@ -1,0 +1,12 @@
+os_preview:
+  version: VERSION
+  css:
+    theme:
+      css/os-preview.css:
+  js:
+    js/os-preview.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupal.ajax
+    - core/jquery.once

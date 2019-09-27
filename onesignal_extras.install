@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Add in highlight field to all nodes.
+ */
+function onesignal_extras_update_8004(&$sandbox) {
+  $entity_type = \Drupal::service('entity_type.manager')->getDefinition('node');
+  \Drupal::service('entity.definition_update_manager')->updateEntityType($entity_type);
+}

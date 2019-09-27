@@ -1,0 +1,7 @@
+name: 'One Signal Extras'
+type: module
+description: ''
+core: 8.x
+package: 'Custom'
+dependencies:
+  - onesignal

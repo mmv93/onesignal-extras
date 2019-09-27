@@ -1,0 +1,158 @@
+<?php
+
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function onesignal_extras_entity_base_field_info(EntityTypeInterface $entity_type) {
+  if ($entity_type->id() === 'node') {
+    $fields['os_title'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Push notification title'))
+      ->setDisplayOptions('form', [
+        'type' => 'string_textfield',
+        'weight' => 30,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDefaultValue('')
+      ->setTranslatable(TRUE)
+      ->setRevisionable(TRUE);
+
+    $fields['os_message'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(t('Push notification message'))
+      ->setDisplayOptions('form', [
+        'type' => 'string_textarea',
+        'weight' => 30,
+        'rows' => 4,
+      ])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setTranslatable(TRUE)
+      ->setDefaultValue('')
+      ->setRevisionable(TRUE);
+
+    $fields['os_image'] = BaseFieldDefinition::create('image')
+      ->setLabel(t('Push notification image'))
+      ->setDescription(t('The product image.'))
+      ->setDisplayOptions('form', array(
+        'type' => 'image_image',
+        'weight' => 30,
+        'settings' => [
+          'alt_field' => TRUE,
+          'alt_field_required' => FALSE,
+          'title_field' => TRUE,
+          'title_field_required' => FALSE,
+        ],
+      ))
+      ->setDisplayConfigurable('form', TRUE);
+
+    $fields['os_send'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Send notification'))
+      ->setDescription(t('If checked push notification will be send after publishing.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(FALSE)
+      ->setDefaultValue(TRUE)
+      ->setDisplayOptions('form', [
+        'type' => 'boolean_checkbox',
+        'weight' => 30,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
+
+    return $fields;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_type_form().
+ */
+function onesignal_extras_form_node_type_form_alter(array &$form, FormStateInterface $form_state) {
+  // Load the real code only when needed.
+  module_load_include('inc', 'onesignal_extras', 'onesignal_extras.admin');
+  _onesignal_extras_form_node_type_form_alter($form, $form_state);
+}
+
+/**
+ * Entity builder for the node type form with onesignal_extras options.
+ */
+function onesignal_extras_form_node_type_form_builder($entity_type, NodeTypeInterface $type, &$form, FormStateInterface $form_state) {
+  $type->setThirdPartySetting('onesignal_extras', 'onesignal_extras_enable', $form_state->getValue('onesignal_extras_enable'));
+  $type->setThirdPartySetting('onesignal_extras', 'onesignal_extras_preview', $form_state->getValue('onesignal_extras_preview'));
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function onesignal_extras_form_node_form_alter(&$form, FormStateInterface $form_state) {
+  $config = \Drupal::config('onesignal_extras.settings');
+
+  /** @var \Drupal\node\NodeTypeInterface $type */
+  $type = $form_state->getFormObject()->getEntity()->type->entity;
+  $os_enabled = $type->getThirdPartySetting('onesignal_extras', 'onesignal_extras_enable', $config->get('default_onesignal_extras_enable'));
+  $preview_enabled = $type->getThirdPartySetting('onesignal_extras', 'onesignal_extras_enable', $config->get('default_onesignal_extras_enable'));
+
+  $fields = _get_os_fields();
+
+  if ($os_enabled) {
+    // Create the group for push notification fields.
+    $form['onesignal_extras_settings'] = [
+      '#type' => 'details',
+      '#title' => t('Push notifications'),
+      '#open' => TRUE,
+      '#weight' => 35,
+      '#attributes' => ['class' => ['os-form']],
+    ];
+    array_walk($fields, function ($field) use (&$form) {
+      $form[$field]['#group'] = 'onesignal_extras_settings';
+    });
+
+    if ($preview_enabled) {
+      $preview = ['#theme' => 'os_preview'];
+
+      $form['onesignal_extras_settings']['os_notification_preview'] = [
+        '#type' => 'item',
+        '#markup' => \Drupal::service('renderer')->render($preview),
+        '#weight' => 31,
+      ];
+
+      // Attach library if preview is enabled.
+      $form['#attached']['library'][] = 'onesignal_extras/os_preview';
+    }
+  }
+  else {
+    // Unset fields if push notifications aren't enabled for current content type.
+    array_walk($fields, function ($field) use (&$form) {
+      unset($form[$field]);
+    });
+  }
+}
+
+/**
+ * Returns One Signal additional fields.
+ *
+ * @return array
+ *   Array with field's machine names.
+ */
+function _get_os_fields() {
+
+  return [
+    'os_title',
+    'os_message',
+    'os_image',
+    'os_send',
+  ];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function onesignal_extras_theme() {
+
+  $theme['os_preview'] = [
+    'template' => 'os-preview',
+    'render element' => 'element',
+  ];
+
+  return $theme;
+}

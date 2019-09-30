@@ -1,0 +1,9 @@
+onesignal_extras.os_extras_config_form:
+  path: '/admin/config/services/onesignal/os-extras'
+  defaults:
+    _form: '\Drupal\onesignal_extras\Form\OSConfigForm'
+    _title: 'One Signal settings '
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE

@@ -1,0 +1,4 @@
+services:
+  onesignal_extras.sender:
+    class: Drupal\onesignal_extras\Sender
+    arguments: ['@config.factory', '@entity_type.manager', '@request_stack']

@@ -11,7 +11,7 @@
   width: 409px;
   max-width: 409px;
   position: static;
-  margin: 5px 0;
+  margin: 10px 0;
   bottom: 75px;
   background: rgb(32, 32, 32);
   color: rgb(167, 167, 167);
@@ -112,7 +112,7 @@
   user-select: none;
   position: relative;
   border-radius: 8px;
-  margin: 5px 0;
+  margin: 10px 0;
   text-align: left;
 }
 .mac-os .iwkTJp {
@@ -190,7 +190,7 @@
   width: 405px;
   max-width: 405px;
   cursor: pointer;
-  margin: 5px 0;
+  margin: 10px 0;
   text-align: left;
 }
 .android .kVxZgZ {

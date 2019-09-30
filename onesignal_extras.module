@@ -4,6 +4,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\file\Entity\File;
 
 /**
  * Implements hook_entity_base_field_info().
@@ -87,6 +88,11 @@ function onesignal_extras_form_node_type_form_builder($entity_type, NodeTypeInte
 function onesignal_extras_form_node_form_alter(&$form, FormStateInterface $form_state) {
   $config = \Drupal::config('onesignal_extras.settings');
 
+  if ($fid = $config->get('icon')) {
+    $file = File::load($fid);
+    $icon_url = $file->createFileUrl();
+  }
+
   /** @var \Drupal\node\NodeTypeInterface $type */
   $type = $form_state->getFormObject()->getEntity()->type->entity;
   $os_enabled = $type->getThirdPartySetting('onesignal_extras', 'onesignal_extras_enable', $config->get('default_onesignal_extras_enable'));
@@ -108,13 +114,47 @@ function onesignal_extras_form_node_form_alter(&$form, FormStateInterface $form_
     });
 
     if ($preview_enabled) {
-      $preview = ['#theme' => 'os_preview'];
-
+      $preview = ['#theme' => 'os_preview', '#data' => ['icon_url' => $icon_url]];
       $form['onesignal_extras_settings']['os_notification_preview'] = [
         '#type' => 'item',
         '#markup' => \Drupal::service('renderer')->render($preview),
         '#weight' => 31,
       ];
+
+      $media = NULL;
+      $form_object = $form_state->getFormObject();
+      $node = $form_object->getEntity();
+
+      $d = \Drupal::service('onesignal_extras.sender')->send($node);
+
+      $media_id = $node->get('os_image')->getValue();
+
+      if (isset($media_id[0]['fids']) && is_array($media_id[0]['fids'])) {
+        $fid = $media_id[0]['fids'][0];
+        $file = File::load($fid);
+        // Create absolute image url.
+        $image_url = $file->createFileUrl(FALSE);
+      }
+
+
+      $input = $form_state->getUserInput();
+      if (is_array($input)) {
+        $b =0;
+      }
+      if ($media instanceof Media) {
+        $file_vals = $media->get('field_media_image')->getValue();
+        if (!empty($file_vals) && $fid = $file_vals[0]['target_id']) {
+          $file = File::load($fid);
+          if ($file->getEntityTypeId() == 'file') {
+            $uri = $file->getFileUri();
+            $style = ImageStyle::load('facebook_post');
+            $destination = $style->buildUri($uri);
+            $style->createDerivative($uri, $destination);
+            $url = $style->buildUrl($uri);
+            $form['#attached']['drupalSettings']['fb_post_img'] = ['url' => $url];
+          }
+        }
+      }
 
       // Attach library if preview is enabled.
       $form['#attached']['library'][] = 'onesignal_extras/os_preview';
@@ -152,6 +192,7 @@ function onesignal_extras_theme() {
   $theme['os_preview'] = [
     'template' => 'os-preview',
     'render element' => 'element',
+    'variables' => ['data' => ['icon_url' => NULL]],
   ];
 
   return $theme;

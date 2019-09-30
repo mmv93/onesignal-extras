@@ -3,12 +3,10 @@
 namespace Drupal\onesignal_extras;
 
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\Entity\File;
 use Drupal\image\Entity\ImageStyle;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\node\Entity\Node;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Entity\ContentEntityBase;
 
@@ -163,11 +161,13 @@ class Sender {
       $icon = File::load($icon_fid);
       $data['icon'] = $icon->createFileUrl(FALSE);
     }
-    
-    $data['chrome_big_picture'] = isset($url) ? $url : '';
 
-
-
+    $image_fid = $entity->{self::IMAGE}->referencedEntities();
+    if ($image = reset($image_fid)) {
+      if ($image instanceof File) {
+        $data['chrome_big_picture'] = $image->createFileUrl(FALSE);
+      }
+    }
 
     return $data;
   }

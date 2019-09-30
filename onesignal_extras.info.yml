@@ -2,6 +2,7 @@ name: 'One Signal Extras'
 type: module
 description: ''
 core: 8.x
-package: 'Custom'
+package: 'OneSignal'
+configure: onesignal_extras.os_extras_config_form
 dependencies:
   - onesignal
